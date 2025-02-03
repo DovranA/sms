@@ -266,7 +266,7 @@ func GetMessage(messageIndex int) (*message, error) {
 				messageBody = string(bytesWritten)
 			} else {
 				log.Printf("GetMessage: Decoding message #%d using Ucs2", messageIndex)
-				messageBody, err = pdu.DecodeUcs2(bytesWritten)
+				messageBody, err = pdu.DecodeUcs2(bytesWritten, true)
 				if err != nil {
 					log.Printf("GetMessage: Failed to decode message #%d using Ucs2", messageIndex)
 				}
