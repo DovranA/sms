@@ -1,0 +1,10 @@
+
+syntax = "proto3";
+import "event-schemas/shared.proto";
+package otp;
+option go_package = "internal/api/event_schemas;event_schemas";
+message OtpGenerated {
+    shared.EventHeader header = 1;
+    string phone = 2;
+    string value = 3;
+}

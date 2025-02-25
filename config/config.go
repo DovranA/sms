@@ -7,10 +7,14 @@ import (
 )
 
 type config struct {
-	ComPort    string
-	BaudRate   int
-	ServerHost string
-	ServerPort int
+	ComPort          string
+	BaudRate         int
+	ServerHost       string
+	ServerPort       int
+	RabbitMQHost     string
+	RabbitMQPort     string
+	RabbitMQUser     string
+	RabbitMQPassword string
 }
 
 var err error

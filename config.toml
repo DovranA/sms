@@ -1,4 +1,9 @@
-ComPort = "/dev/ttyUSB0"
-BaudRate = 115200
+ComPort = "/dev/ttyUSB5"
+BaudRate = 9600
 ServerHost = "0.0.0.0"
 ServerPort = 8080
+RabbitMQHost = 95.85.125.16
+RabbitMQPort = 5672
+RabbitMQUser = guest
+RabbitMQPassword = guest
+

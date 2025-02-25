@@ -1,0 +1,11 @@
+
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+package shared;
+option go_package = "internal/api/event_schemas;event_schemas";
+message EventHeader {
+    string trace_id = 1;
+    string type = 2;
+    google.protobuf.Timestamp timestamp = 3;
+    string origin = 4;
+}

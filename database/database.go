@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/alexgear/sms/common"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 var db *sql.DB
@@ -18,7 +18,7 @@ func InitDB(dbname string) (*sql.DB, error) {
 	if os.IsNotExist(err) {
 		log.Printf("InitDB: database does not exist %s", dbname)
 	}
-	db, err = sql.Open("sqlite3", dbname)
+	db, err = sql.Open("sqlite", dbname)
 	if err != nil {
 		return nil, fmt.Errorf("InitDB: Error creating database. %s", err.Error())
 	}
@@ -60,7 +60,7 @@ func InsertMessage(sms *common.SMS) error {
 	return nil
 }
 
-//TODO: locks for driver.Stmt (stmt) and driver.Conn (db)
+// TODO: locks for driver.Stmt (stmt) and driver.Conn (db)
 func UpdateMessageStatus(sms common.SMS) error {
 	log.Printf("Updating msg status %#v", sms)
 	stmt, err := db.Prepare("UPDATE messages SET status=?, retries=?, updated_at=DATETIME('now') WHERE uuid=?")

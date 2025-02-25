@@ -2,3 +2,4 @@ db.sqlite*
 *.swp
 .cover
 sms
+config.toml

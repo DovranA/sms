@@ -16,7 +16,7 @@ func main() {
 		log.Fatalf("main: Invalid config: %s", err.Error())
 	}
 
-	db, err := database.InitDB("db.sqlite")
+	db, err := database.InitDB("database.db")
 	defer db.Close()
 	if err != nil {
 		log.Fatalf("main: Error initializing database: %s", err.Error())
@@ -30,7 +30,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("main: error reseting modem. %s", err)
 	}
-	worker.InitWorker()
+	worker.InitWorker(&worker.Config{RabbitMQHost: cfg.RabbitMQHost, RabbitMQPort: cfg.RabbitMQPort, RabbitMQUser: cfg.RabbitMQUser, RabbitMQPassword: cfg.RabbitMQPassword})
 	err = api.InitServer(cfg.ServerHost, cfg.ServerPort)
 	if err != nil {
 		log.Fatalf("main: Error starting server: %s", err.Error())

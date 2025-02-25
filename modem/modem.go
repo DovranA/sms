@@ -103,11 +103,11 @@ func WaitForOutput(reps int, suffix string) (string, error) {
 			}
 		} else {
 			log.Printf("WaitForOutput: No output on %dth iteration", i)
-			// time.Sleep(time.Millisecond * 500)
+			time.Sleep(time.Millisecond * 500)
 			i++
 		}
 	}
-	return status, errors.New("WaitForOutput: Timed out.")
+	return status, errors.New("WaitForOutput: Timed out")
 }
 
 func GetSignal() (float64, error) {
@@ -154,7 +154,7 @@ func Reset() error {
 		"AT+CSCS=\"GSM\"\r",
 	}
 	// Send C^Z first
-	_, err = SendCommand(string(26), false)
+	_, err = SendCommand(strconv.Itoa(26), false)
 	for _, c := range InitCommands {
 		for i := 0; i < 10; i++ {
 			log.Printf("%v, %#v", i, c)
@@ -205,7 +205,7 @@ func GetBalance(ussdRequest string) (float64, error) {
 	if err != nil {
 		return 0.0, err
 	}
-	return 0.0, errors.New("GetBalace: Failed to get balance.")
+	return 0.0, errors.New("GetBalace: Failed to get balance")
 }
 
 func SendMessage(mobile string, message string) error {
@@ -225,7 +225,7 @@ func SendMessage(mobile string, message string) error {
 		return fmt.Errorf("SendMessage: Failed to wait for output.\n%s", err.Error())
 	}
 	// EOM CTRL-Z = 26
-	_, err = SendCommand(message+string(26), true)
+	_, err = SendCommand(message+strconv.Itoa(26), true)
 	if err != nil {
 		return fmt.Errorf("SendMessage: Failed to send command.\n%s", err.Error())
 	}
@@ -266,7 +266,7 @@ func GetMessage(messageIndex int) (*message, error) {
 				messageBody = string(bytesWritten)
 			} else {
 				log.Printf("GetMessage: Decoding message #%d using Ucs2", messageIndex)
-				messageBody, err = pdu.DecodeUcs2(bytesWritten)
+				messageBody, err = pdu.DecodeUcs2(bytesWritten, true)
 				if err != nil {
 					log.Printf("GetMessage: Failed to decode message #%d using Ucs2", messageIndex)
 				}
