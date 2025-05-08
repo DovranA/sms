@@ -1,7 +1,7 @@
 ComPort = "/dev/ttyUSB0"
 BaudRate = 115200
 ServerHost = "0.0.0.0"
-ServerPort = 8080
+ServerPort = 8088
 RabbitMQHost = "95.85.125.16"
 RabbitMQPort = "5672"
 RabbitMQUser = "guest"
