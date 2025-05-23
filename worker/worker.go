@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/alexgear/sms/common"
 	"github.com/alexgear/sms/database"
@@ -14,10 +15,7 @@ import (
 )
 
 var (
-	err        error
-	rabbitConn *amqp.Connection
-	rabbitCh   *amqp.Channel
-	rabbitQue  amqp.Queue
+	err error
 )
 
 type Config struct {
@@ -28,104 +26,105 @@ type Config struct {
 }
 
 func InitWorker(cfg *Config) {
-	initRabbitMQ(cfg)
 	messages := make(chan common.SMS)
-	go producer(messages)
 	go consumer(messages)
+
+	go func() {
+		for {
+			log.Println("Reconnect to RabbitMQ...")
+			rabbitConn, rabbitCh, rabbitQue := initRabbitMQ(cfg)
+			go producer(rabbitCh, rabbitQue, messages)
+
+			time.Sleep(2 * time.Minute)
+
+			log.Println("Connection: Close current connection...")
+			if rabbitCh != nil {
+				_ = rabbitCh.Close()
+			}
+			if rabbitConn != nil {
+				_ = rabbitConn.Close()
+			}
+		}
+	}()
 }
-func initRabbitMQ(cfg *Config) {
-	var err error
+
+func initRabbitMQ(cfg *Config) (*amqp.Connection, *amqp.Channel, amqp.Queue) {
 	url := fmt.Sprintf("amqp://%s:%s@%s:%s/", cfg.RabbitMQUser, cfg.RabbitMQPassword, cfg.RabbitMQHost, cfg.RabbitMQPort)
-	rabbitConn, err = amqp.Dial(url)
+	conn, err := amqp.Dial(url)
 	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+		log.Fatalf("Can't connect to RabbitMQ: %v", err)
 	}
 
-	rabbitCh, err = rabbitConn.Channel()
+	ch, err := conn.Channel()
 	if err != nil {
-		log.Fatalf("Failed to open a channel: %v", err)
-	}
-	err = rabbitCh.ExchangeDeclare(
-		"otp",
-		"topic",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		log.Fatalf("Failed to declare an exchange: %v", err)
+		log.Fatalf("Can't open channel: %v", err)
 	}
 
-	rabbitQue, err = rabbitCh.QueueDeclare(
-		"otp.generated:send.sms",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
+	err = ch.ExchangeDeclare("otp", "topic", true, false, false, false, nil)
 	if err != nil {
-		log.Fatalf("Failed to declare a queue: %v", err)
+		log.Fatalf("Can't announce exchange: %v", err)
 	}
+
+	que, err := ch.QueueDeclare("otp.generated:send.sms", true, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("Can't announce queue: %v", err)
+	}
+
+	return conn, ch, que
 }
+
 func consumer(messages chan common.SMS) {
-	for {
-		message := <-messages
-		log.Println("consumer: processing", message.UUID)
-		err = modem.SendMessage(message.Mobile, message.Body)
+	for msg := range messages {
+		log.Println("consumer: processing", msg.UUID)
+		err = modem.SendMessage(msg.Mobile, msg.Body)
 		if err != nil {
-			message.Status = "error"
-			log.Println("consumer: failed to process", message.UUID, err)
+			msg.Status = "error"
+			log.Println("consumer: error sending", msg.UUID, err)
 		} else {
-			message.Status = "sent"
+			msg.Status = "sent"
 		}
-		message.Retries++
-		database.UpdateMessageStatus(message)
+		msg.Retries++
+		database.UpdateMessageStatus(msg)
 	}
 }
 
-func producer(messages chan common.SMS) {
-	msgs, err_msgs := rabbitCh.Consume(
-		rabbitQue.Name,
-		"otp.generated",
+func producer(ch *amqp.Channel, que amqp.Queue, messages chan common.SMS) {
+	msgs, err := ch.Consume(
+		que.Name,
+		"",
 		true,
 		false,
 		false,
 		false,
 		nil,
 	)
-	if err_msgs != nil {
-		log.Panicf("%v: %v", msgs, err_msgs)
+	if err != nil {
+		log.Printf("Error consume: %v", err)
+		return
 	}
-	for d := range msgs {
-		encodedMessage := d.Body
-		var message otp.OtpGenerated
 
-		err = proto.Unmarshal(encodedMessage, &message)
+	for d := range msgs {
+		var message otp.OtpGenerated
+		err = proto.Unmarshal(d.Body, &message)
 		if err != nil {
-			log.Fatalf("Ошибка разбора Protobuf: %v", err)
+			log.Printf("Error parse Protobuf: %v", err)
+			continue
 		}
-		Mobile := message.GetPhone()
-		Body := message.GetValue()
+
 		uuid := uuid.NewV1()
 		sms := &common.SMS{
 			UUID:   uuid.String(),
-			Mobile: Mobile,
-			Body:   Body,
-			Status: "pending"}
+			Mobile: message.GetPhone(),
+			Body:   message.GetValue(),
+			Status: "pending",
+		}
+
 		err = database.InsertMessage(sms)
 		if err != nil {
-			log.Fatalf("Ошибка insert to db: %v", err)
+			log.Printf("Error insert to DB: %v", err)
+			continue
 		}
-		msg := common.SMS{
-			UUID:   sms.UUID,
-			Mobile: sms.Mobile,
-			Body:   sms.Body,
-			Status: sms.Status,
-		}
-		messages <- msg
-	}
 
+		messages <- *sms
+	}
 }

@@ -226,6 +226,7 @@ func SendMessage(mobile string, message string) error {
 	}
 	// EOM CTRL-Z = 26
 	_, err = SendCommand(message+string([]byte{26}), true)
+	// _, err = SendCommand(message+strconv.Itoa(26), true)
 	if err != nil {
 		return fmt.Errorf("SendMessage: Failed to send command.\n%s", err.Error())
 	}
