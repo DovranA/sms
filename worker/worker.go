@@ -107,7 +107,6 @@ func producer(messages chan common.SMS) {
 		if err != nil {
 			log.Fatalf("Ошибка разбора Protobuf: %v", err)
 		}
-
 		Mobile := message.GetPhone()
 		Body := message.GetValue()
 		uuid := uuid.NewV1()

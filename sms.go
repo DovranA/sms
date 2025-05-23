@@ -26,6 +26,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("main: error initializing to modem. %s", err)
 	}
+
+	if err != nil {
+		log.Fatalf("main: error initializing to modem. %s", err)
+	}
 	err = modem.Reset()
 	if err != nil {
 		log.Fatalf("main: error reseting modem. %s", err)
