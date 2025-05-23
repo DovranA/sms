@@ -1,4 +1,4 @@
-ComPort = "/dev/ttyUSB5"
+ComPort = "/dev/ttyUSB0"
 BaudRate = 9600
 ServerHost = "0.0.0.0"
 ServerPort = 8080
